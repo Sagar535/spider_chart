@@ -1,7 +1,7 @@
 // chart.js
 const width = 600
-const yPadding = 50
-const xPadding = 50
+const yPadding = 200
+const xPadding = 200
 
 const height = 600
 const pentAngle = 72;
@@ -19,20 +19,21 @@ const svg = d3.select("#chart")
     
     
 let data = [];
-const features = ["A", "B", "C", "D", "E"];
+const features = ["Certainty", "Autonomy", "Purpose", "Belonging", "Competence"];
 const featuresLength = features.length
 
 const line = d3.line()
     .x(d => d.x)
     .y(d => d.y);
-const colors = ["#8CFF8C", "#C3C3C3"];
+const colors = ["#C3C3C3", "#8CFF8C"];
+const strokeColors = ["#FFF", "#49FF49"]
 
 
 //generate the data
-for (var i = 0; i < 1; i++){
+for (var i = 0; i < 2; i++){
     var point = {}
     //each feature will be a random number from 0-100
-    features.forEach(f => point[f] = Math.random() * 100);
+    features.forEach(f => point[f] = parseInt(Math.random() * 100));
     data.push(point);
 }
 console.log(data);
@@ -47,18 +48,18 @@ const radialScale = d3.scaleLinear()
 const ticks = [2, 4, 6, 8, 10, 12]
 
 
-// NOTE: this are here to make sure the coordinates are on point.. 
-// TODO: FIXME: Remove this
-svg.selectAll("circle")
-    .data(ticks)
-    .join(
-        enter => enter.append("circle")
-            .attr("cx", cx)
-            .attr("cy", cy)
-            .attr("fill", "none")
-            .attr("stroke", "gray")
-            .attr("r", d => radialScale(d))
-    );
+// // NOTE: this are here to make sure the coordinates are on point.. 
+// // TODO: FIXME: Remove this
+// svg.selectAll("circle")
+//     .data(ticks)
+//     .join(
+//         enter => enter.append("circle")
+//             .attr("cx", cx)
+//             .attr("cy", cy)
+//             .attr("fill", "none")
+//             .attr("stroke", "gray")
+//             .attr("r", d => radialScale(d))
+//     );
     
 index = 0
 // coordinates1 = []
@@ -117,27 +118,43 @@ range.forEach(tick => {
   .attr("stroke-width", 2);
 })
 
+console.log("coordinates", coordinates)
 
-// // here we draw pentagons in each circle
-// Object.values(coordinates).forEach(coordinateArray => {
-// 	let index = 0
-//   while(index < 5) {
-//   	let [x1, y1] = coordinateArray[index]
-//     let [x2, y2] = coordinateArray[index+1]
+// vertical_labels
+ticks.forEach((tick, index) => {
+  let [x, y] = coordinates[tick][0]
+  svg.append("text")
+      .attr("x", x)
+      .attr("y", y)
+      .attr("dy", "-0.2em")
+      .attr("dx", "-1.9em")
+      .attr("fill", "#FFF")
+      .style("font-size", "10px")
+      .text(dataScale.invert(tick))
+
+}) 
+
+
+// here we draw pentagons in each circle
+Object.values(coordinates).forEach(coordinateArray => {
+	let index = 0
+  while(index < 5) {
+  	let [x1, y1] = coordinateArray[index]
+    let [x2, y2] = coordinateArray[index+1]
     
-//     svg.append("line")
-//       .attr("x1", x1)
-//       .attr("y1", y1)
-//       .attr("x2", x2)
-//       .attr("y2", y2)
-//       .attr("stroke", "#fff")
-//       .attr("stroke-dasharray", "3, 3")
-//       .attr("stroke-width", 1.5);
+    svg.append("line")
+      .attr("x1", x1)
+      .attr("y1", y1)
+      .attr("x2", x2)
+      .attr("y2", y2)
+      .attr("stroke", "#fff")
+      .attr("stroke-dasharray", "3, 3")
+      .attr("stroke-width", 1.5);
 
-//     index += 1
-//   }
+    index += 1
+  }
 	
-// })
+})
 
 // draw the path element
 svg.selectAll("path")
@@ -147,27 +164,53 @@ svg.selectAll("path")
             .datum(d => getPathCoordinates(d))
             .attr("d", line)
             .attr("stroke-width", 3)
-            .attr("stroke", (_, i) => colors[i])
+            .attr("stroke", (_, i) => strokeColors[i])
             .attr("fill", (_, i) => colors[i])
             .attr("stroke-opacity", 1)
-            .attr("opacity", 0.5)
+            .attr("opacity", (_, i) => i == 0 ? "0.35" : "0.7")
     );
 
 
 features.forEach((feature, i) => {
-  let angle = Math.PI / 2 + (2 * Math.PI * i) / featuresLength;
+  // -i is required to move / rotate in clockwise direction
+  let angle = Math.PI / 2 + (2 * Math.PI * -i) / featuresLength;
   let x = Math.cos(angle) * radialScale(13);
   let y = Math.sin(angle) * radialScale(13);
+  let benchDiff = data[1][feature] - data[0][feature]
 
-  svg
-    .append('text')
-    .attr('x', cx + x)
-    .attr('y', cy - y)
-    .attr('dy', '0.35em')
-    .attr('fill', 'white')
-    .attr('text-anchor', 'middle')
-    .text(feature);
+  const edgeTexts = svg
+                      .append('text')
+                      .attr('x', cx + x)
+                      .attr('y', cy - y)
+                      .attr('dy', feature == 'Certainty' ? '-1em' : '0.35em')
+                      .attr("dx", feature == 'Autonomy' ? '2.35em' : (feature == "Competence" ? '-6.35em' : ""))
+                      .attr('fill', 'white')
+                      .attr("text-anchor", "middle")
+                      .text(`${feature}`)
+
+  edgeTexts.append("tspan")
+            .text(`${data[1][feature]} ( ${benchDiff < 0 ? "-" : "+"}${Math.abs(benchDiff)})`)
+            .attr('x', cx + x)
+            .attr("dx", feature == 'Autonomy' ? '2.35em' : (feature == "Competence" ? '-6.35em' : ""))
+            .attr("dy", "20")
+            .attr("fill", benchDiff < 0 ? "red" : "green")
 });
+
+// data.forEach(datum => {
+//   coordinates = getPathCoordinates(datum)
+
+//   console.log("Object.values(datum) : ", Object.values(datum))
+
+//   coordinates.forEach((coordinate, i) => {
+//     console.log("coordinate: ", coordinate['x'])
+//     svg.append("text")
+//     // .append("text.value")
+//       .attr("x", coordinate['x'])
+//       .attr("y", coordinate['y'])
+//       .text(Object.values(datum)[i])
+//       .style("fill", "#fff")
+//   })
+// })
 
 
 
@@ -210,7 +253,7 @@ function getPathCoordinates(data_point){
   let coordinates = [];
   for (var i = 0; i < featuresLength; i++){
       let ft_name = features[i];
-      let angle = (Math.PI / 2) + (2 * Math.PI * i / featuresLength);
+      let angle = (Math.PI / 2) + (2 * Math.PI * -i / featuresLength);
       coordinates.push(angleToCoordinate(angle, data_point[ft_name]));
   }
 
