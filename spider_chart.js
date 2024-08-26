@@ -31,11 +31,15 @@ const colors = ["#8CFF8C", "#C3C3C3"];
 //generate the data
 for (var i = 0; i < 1; i++){
     var point = {}
-    //each feature will be a random number from 1-9
-    features.forEach(f => point[f] = 2 + Math.random() * 9);
+    //each feature will be a random number from 0-100
+    features.forEach(f => point[f] = Math.random() * 100);
     data.push(point);
 }
 console.log(data);
+
+const dataScale = d3.scaleLinear()
+                    .domain([0, 100])
+                    .range([2, 12])
 
 const radialScale = d3.scaleLinear()
     .domain([0, 12])
@@ -150,6 +154,22 @@ svg.selectAll("path")
     );
 
 
+features.forEach((feature, i) => {
+  let angle = Math.PI / 2 + (2 * Math.PI * i) / featuresLength;
+  let x = Math.cos(angle) * radialScale(13);
+  let y = Math.sin(angle) * radialScale(13);
+
+  svg
+    .append('text')
+    .attr('x', cx + x)
+    .attr('y', cy - y)
+    .attr('dy', '0.35em')
+    .attr('fill', 'white')
+    .attr('text-anchor', 'middle')
+    .text(feature);
+});
+
+
 
   
   
@@ -199,9 +219,9 @@ function getPathCoordinates(data_point){
 }
 
 function angleToCoordinate(angle, value){
-  let x = Math.cos(angle) * radialScale(value) + xPadding;
-  let y = Math.sin(angle) * radialScale(value) + yPadding;
-  return {"x": width / 2 + x, "y": height / 2 - y};
+  let x = Math.cos(angle) * radialScale(dataScale(value));
+  let y = Math.sin(angle) * radialScale(dataScale(value));
+  return {"x": cx + x, "y": cy - y};
 }
 
 // function getAngleForFeature(feature) {
